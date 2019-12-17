@@ -1,0 +1,14 @@
+Q:
+Is it made of wood?
+A:
+door
+Q:
+Can you drive it?
+A:
+car
+Q:
+Is it an animal?
+A:
+cat
+A:
+computer
