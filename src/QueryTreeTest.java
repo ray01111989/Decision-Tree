@@ -34,11 +34,39 @@ public class QueryTreeTest {
         	
             tree.readIn(new File(filename));// This will call the read in the data file method and passed to the tree
         }
-    	 }catch(Exception e) // This to catch any exception when we scan the file.
+    	 }catch(IOException | IllegalArgumentException e) // The file is missing, empty or not in the Q:/A: format.
     	{
+    	    System.out.println("Could not read " + filename + " (" + e.getMessage() + "). Starting with the default tree.");// Tell the user instead of ignoring the problem
     	    }
         return tree; // return the tree 
    	
+    }
+
+    // Reads one line from the user. If the input has ended (Ctrl-D or a finished script) it says goodbye and stops
+    // (it used to crash with a NoSuchElementException stack trace).
+    private static String readLine(Scanner input)
+    {
+        if(!input.hasNextLine())
+        {
+            System.out.println();
+            System.out.println("Good Bye!");
+            System.exit(0);
+        }
+        return input.nextLine();
+    }
+
+    // Asks until the user types something other than an empty line
+    private static String readNonEmpty(Scanner input, String prompt)
+    {
+        System.out.print(prompt);
+        String answer = readLine(input).trim();
+        while(answer.isEmpty())
+        {
+            System.out.println("That cannot be empty.");
+            System.out.print(prompt);
+            answer = readLine(input).trim();
+        }
+        return answer;
     }
 
     // Loop that determines whether or not user input is valid
@@ -47,12 +75,12 @@ public class QueryTreeTest {
     {
         System.out.print(phrase + " (y/n)? "); // This to print the first message for the user to ask if he want to use the previous tree. 
         
-        String affirm = input.nextLine().trim().toLowerCase(); // This will scan if there is a next line and take out the white spaces also convert to lower case then set it to String variable. 
+        String affirm = readLine(input).trim().toLowerCase(); // This will scan if there is a next line and take out the white spaces also convert to lower case then set it to String variable. 
         while(!(affirm.equals("y") || affirm.equals("n")))// while loop to check for yes and no answer. 
         {
             System.out.println("That was an invalid entry.");// If the answer not yes or no then display this message 
             System.out.print(phrase + " (y/n)? ");// This will ask the user to scan from the previous tree. 
-            affirm = input.nextLine().trim().toLowerCase();//This will scan if there is a next line and take out the white spaces also convert to lower case then set it to String variable. 
+            affirm = readLine(input).trim().toLowerCase();//This will scan if there is a next line and take out the white spaces also convert to lower case then set it to String variable. 
         }
         return affirm; // will return the string we have after the previous method. 
     }
@@ -90,10 +118,8 @@ public class QueryTreeTest {
             }
 // 'y');//
             else{
-                System.out.print("What is the name of your object? ");// Ask for what is the object if it was not right guess. 
-                String obj = input.nextLine().trim(); // Check for next line input 
-                System.out.print("Please give a yes/no question that distinguishes between your "+ obj +" and "+ tree.finalGuess()+ " where the answer YES for your "+ obj +"."); // This ask the user for a question for the object he was thinking of. 
-                String question = input.nextLine().trim(); // This will check the next line input and set it to question string 
+                String obj = readNonEmpty(input, "What is the name of your object? ");// Ask for what is the object if it was not right guess. 
+                String question = readNonEmpty(input, "Please give a yes/no question that distinguishes between your "+ obj +" and "+ tree.finalGuess()+ " where the answer YES for your "+ obj +". "); // This ask the user for a question for the object he was thinking of. 
                 tree.updateTree(question, obj,  'y');//validEntryLoop(input, "And what is the answer for your object?").charAt(0)); // This will update the tree with the new input. 
             }
 
@@ -101,12 +127,15 @@ public class QueryTreeTest {
             toRepeat = validEntryLoop(input, "Do you want to go again?").equals("y");// Ask for another game 
             
        // }
-        if(args.length==0) // Check for argument command file if there is one 
-        {
-        tree.writeOut(new File("20ss.txt"));// write to the default file. 
-        }
-        else {
-        	tree.writeOut(new File(args[0]));// This will write to the file was declared in the argument command line 
+        File saveFile = new File(filename); // the default file, or the file given on the command line
+        try {
+            if(!saveFile.exists())
+            {
+                saveFile.createNewFile(); // writeOut needs an existing file, so create it the first time
+            }
+            tree.writeOut(saveFile);// save the tree
+        } catch(IOException e) {
+            System.out.println("Could not save the tree to " + filename + ": " + e.getMessage());
         }
         }
         System.out.println("Good Bye!"); // Good bye message 
