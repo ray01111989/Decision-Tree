@@ -96,6 +96,10 @@ public class QueryTree // The begging of QueryTree methods.
         {
             throw new IllegalStateException();
         }
+        if(q == null || q.trim().isEmpty() || item == null || item.trim().isEmpty())// an empty question or object would leave a blank line in the saved file
+        {
+            throw new IllegalArgumentException("The question and the item cannot be empty.");
+        }
         String currVal = current.data;// it take the data field of the current node and set it to the currVale 
         current.data = q;// Set the q string to the data field of the root node 
         if(Character.toLowerCase(input) == 'y')// This will covert the input to lower case letter 
@@ -130,7 +134,10 @@ public class QueryTree // The begging of QueryTree methods.
         }
         if(overallRoot != null)// Will check if the root do not equal null.
         {
-            writeOut(new PrintStream(f), overallRoot); // Here it take the root and it Creates a new print stream, without automatic line flushing
+            try (PrintStream out = new PrintStream(f)) // try-with-resources closes the file when we are done (it used to stay open)
+            {
+                writeOut(out, overallRoot); // Here it take the root and it Creates a new print stream, without automatic line flushing
+            }
         }
     }
 
@@ -161,13 +168,16 @@ public class QueryTree // The begging of QueryTree methods.
         {
             throw new IOException("File either doesn't exist or can't be read.");
         }
-        Scanner file = new Scanner(f); // This is a scanner name file 
-        if(!file.hasNext()) // This if statement to make sure there is next line in input. 
+        try (Scanner file = new Scanner(f)) // This is a scanner name file; try-with-resources closes it (it used to stay open)
         {
-            throw new IllegalArgumentException("Empty File.");
+            if(!file.hasNext()) // This if statement to make sure there is next line in input. 
+            {
+                throw new IllegalArgumentException("Empty File.");
+            }
+            QueryTreeNode root = readIn(file); // Read the whole tree first, so a bad file leaves the current tree untouched
+            overallRoot = root; // This will call the method again and set it to the overall root. 
+            current = overallRoot; // set the overall root to current node 
         }
-        overallRoot = readIn(file); // This will call the method again and set it to the overall root. 
-        current = overallRoot; // set the overall root to current node 
     }
 
     // Recursive method that uses a provided Scanner to read in a File and set up QueryTree accordingly
@@ -193,7 +203,13 @@ public class QueryTree // The begging of QueryTree methods.
         {
             return new QueryTreeNode(phrase, null, null);
         }
-        return new QueryTreeNode(phrase, readIn(file), readIn(file));// returning the string and the two scanners and return them.
+        QueryTreeNode yesNode = readIn(file); // the subtree for the answer yes comes first in the file
+        QueryTreeNode noNode = readIn(file);  // then the subtree for the answer no
+        if(yesNode == null || noNode == null) // the file ended before both branches of this question were found
+        {
+            throw new IllegalArgumentException("Incomplete File."); // (this used to build a broken node and crash later)
+        }
+        return new QueryTreeNode(phrase, yesNode, noNode);// returning the string and the two branches.
     }
 
     //Node of a QueryTree
